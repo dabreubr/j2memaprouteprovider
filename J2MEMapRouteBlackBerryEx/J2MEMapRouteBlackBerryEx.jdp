@@ -21,10 +21,10 @@ AutoRestart=0
 ]
 ExcludeFromBuildAll=0
 [Files
-src\ci\org\geo\route\blackberry\MapPathApp.java
-src\ci\org\geo\route\Point.java
-src\ci\org\geo\route\Road.java
-src\ci\org\geo\route\RoadProvider.java
+src\org\ci\geo\route\blackberry\MapPathApp.java
+src\org\ci\geo\route\Point.java
+src\org\ci\geo\route\Road.java
+src\org\ci\geo\route\RoadProvider.java
 ]
 HaveAlxImports=0
 HaveDefs=0

@@ -1,22 +1,24 @@
 package org.ci.geo.route.blackberry;
 
-import javax.microedition.location.Coordinates;
+import java.io.IOException;
+import java.io.InputStream;
 
-import org.ci.geo.route.*;
+import javax.microedition.io.Connector;
+import javax.microedition.io.HttpConnection;
+import javax.microedition.location.Coordinates;
 
 import net.rim.device.api.lbs.MapField;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Color;
-import net.rim.device.api.ui.DrawStyle;
 import net.rim.device.api.ui.Graphics;
-import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.XYPoint;
 import net.rim.device.api.ui.component.LabelField;
-import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.container.MainScreen;
 import net.rim.device.api.util.Arrays;
 
+import org.ci.geo.route.Road;
+import org.ci.geo.route.RoadProvider;
 
 public class MapPathApp extends UiApplication {
 
@@ -36,7 +38,9 @@ class MapPathScreen extends MainScreen {
 
 	public MapPathScreen() {
 		double fromLat = 49.85, fromLon = 24.016667, toLat = 50.45, toLon = 30.523333;
-		mRoad = RoadProvider.getRoute(fromLat, fromLon, toLat, toLon);
+		String url = RoadProvider.getUrl(fromLat, fromLon, toLat, toLon);
+		InputStream is = getConnection(url);
+		mRoad = RoadProvider.getRoute(is);
 		map = new MapControl();
 		add(new LabelField(mRoad.mName));
 		add(new LabelField(mRoad.mDescription));
@@ -48,6 +52,19 @@ class MapPathScreen extends MainScreen {
 		if (attached) {
 			map.drawPath(mRoad);
 		}
+	}
+
+	private InputStream getConnection(String url) {
+		HttpConnection urlConnection = null;
+		InputStream is = null;
+		try {
+			urlConnection = (HttpConnection) Connector.open(url);
+			urlConnection.setRequestMethod("GET");
+			is = urlConnection.openInputStream();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return is;
 	}
 
 }
@@ -98,73 +115,3 @@ class MapControl extends MapField {
 		}
 	}
 }
-// protected void zoomToFitPoints(Coordinates[] points) {
-//
-// // zoom to max
-// setZoom(getMaxZoom());
-//
-// // get pixels of all points
-// int minLeft = getWidth();
-// int minUp = getHeight();
-// int maxRight = 0;
-// int maxDown = 0;
-// Coordinates minLeftCoordinates = null;
-// Coordinates minUpCoordinates = null;
-// Coordinates maxRightCoordinates = null;
-// Coordinates maxDownCoordinates = null;
-// for (int i = 0; i < points.length; i++) {
-// XYPoint point = new XYPoint();
-// convertWorldToField(points[i], point);
-// if (point.x <= minLeft) {
-// minLeft = point.x;
-// minLeftCoordinates = points[i];
-// }
-// if (point.x >= maxRight) {
-// maxRight = point.x;
-// maxRightCoordinates = points[i];
-// }
-// if (point.y <= minUp) {
-// minUp = point.y;
-// minUpCoordinates = points[i];
-// }
-// if (point.y >= maxDown) {
-// maxDown = point.y;
-// maxDownCoordinates = points[i];
-// }
-// }
-//
-// double moveToLat = maxDownCoordinates.getLatitude()
-// + (minUpCoordinates.getLatitude() - maxDownCoordinates
-// .getLatitude()) / 2;
-// double moveToLong = minLeftCoordinates.getLongitude()
-// + (maxRightCoordinates.getLongitude() - minLeftCoordinates
-// .getLongitude()) / 2;
-// Coordinates moveTo = new Coordinates(moveToLat, moveToLong, 0);
-// moveTo(moveTo);
-// // zoom to min left up, max right down pixels + 1
-// int zoom = getZoom();
-// boolean outOfBounds = false;
-// while (!outOfBounds && zoom > getMinZoom()) {
-// zoom--;
-// setZoom(zoom);
-// XYPoint point = new XYPoint();
-// try {
-// convertWorldToField(minLeftCoordinates, point);
-// if (point.x < 10)
-// outOfBounds = true;
-// convertWorldToField(minUpCoordinates, point);
-// if (point.y < 10)
-// outOfBounds = true;
-// convertWorldToField(maxRightCoordinates, point);
-// if (point.x > getWidth() - 10)
-// outOfBounds = true;
-// convertWorldToField(maxDownCoordinates, point);
-// if (point.y > getHeight() - 10)
-// outOfBounds = true;
-// } catch (IllegalArgumentException ex) {
-// outOfBounds = true;
-// }
-// }
-// zoom++;
-// setZoom(zoom);
-// }
