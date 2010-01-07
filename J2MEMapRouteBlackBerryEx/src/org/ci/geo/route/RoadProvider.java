@@ -29,8 +29,8 @@ public class RoadProvider {
 		return handler.mRoad;
 	}
 
-	public static String getUrl(double fromLat, double fromLon,
-			double toLat, double toLon) {// connect to map web service
+	public static String getUrl(double fromLat, double fromLon, double toLat,
+			double toLon) {// connect to map web service
 		StringBuffer urlString = new StringBuffer();
 		urlString.append("http://maps.google.com/maps?f=d&hl=en");
 		urlString.append("&saddr=");// from
@@ -52,6 +52,7 @@ class KMLHandler extends DefaultHandler {
 	boolean isRoute;
 	boolean isItemIcon;
 	private Stack mCurrentElement = new Stack();
+	private String mString;
 
 	public KMLHandler() {
 		mRoad = new Road();
@@ -59,69 +60,80 @@ class KMLHandler extends DefaultHandler {
 
 	public void startElement(String uri, String localName, String name,
 			Attributes attributes) throws SAXException {
-		mCurrentElement.push(name);
-		if (name.equalsIgnoreCase("Placemark")) {
+		mCurrentElement.push(localName);
+		if (localName.equalsIgnoreCase("Placemark")) {
 			isPlacemark = true;
 			mRoad.mPoints = addPoint(mRoad.mPoints);
-		} else if (name.equalsIgnoreCase("ItemIcon")) {
+		} else if (localName.equalsIgnoreCase("ItemIcon")) {
 			if (isPlacemark)
 				isItemIcon = true;
 		}
+		mString = new String();
 	}
 
 	public void characters(char[] ch, int start, int length)
 			throws SAXException {
 		String chars = new String(ch, start, length).trim();
-		String name = (String) mCurrentElement.peek();
-		if (chars.length() > 0) {
-			if (name.equalsIgnoreCase("name")) {
+		mString = mString.concat(chars);
+	}
+
+	public void endElement(String uri, String localName, String name)
+			throws SAXException {
+		if (mString.length() > 0) {
+			if (localName.equalsIgnoreCase("name")) {
 				if (isPlacemark) {
-					isRoute = chars.equalsIgnoreCase("Route");
+					isRoute = mString.equalsIgnoreCase("Route");
 					if (!isRoute) {
-						mRoad.mPoints[mRoad.mPoints.length - 1].mName = chars;
+						mRoad.mPoints[mRoad.mPoints.length - 1].mName = mString;
 					}
 				} else {
-					mRoad.mName = chars;
+					mRoad.mName = mString;
 				}
-			} else if (name.equalsIgnoreCase("color") && !isPlacemark) {
-				mRoad.mColor = Integer.parseInt(chars, 16);
-			} else if (name.equalsIgnoreCase("width") && !isPlacemark) {
-				mRoad.mWidth = Integer.parseInt(chars);
-			} else if (name.equalsIgnoreCase("description")) {
+			} else if (localName.equalsIgnoreCase("color") && !isPlacemark) {
+				mRoad.mColor = Integer.parseInt(mString, 16);
+			} else if (localName.equalsIgnoreCase("width") && !isPlacemark) {
+				mRoad.mWidth = Integer.parseInt(mString);
+			} else if (localName.equalsIgnoreCase("description")) {
 				if (isPlacemark) {
-					String description = cleanup(chars);
+					String description = cleanup(mString);
 					if (!isRoute)
 						mRoad.mPoints[mRoad.mPoints.length - 1].mDescription = description;
 					else
 						mRoad.mDescription = description;
 				}
-			} else if (name.equalsIgnoreCase("href")) {
+			} else if (localName.equalsIgnoreCase("href")) {
 				if (isItemIcon) {
-					mRoad.mPoints[mRoad.mPoints.length - 1].mIconUrl = chars;
+					mRoad.mPoints[mRoad.mPoints.length - 1].mIconUrl = mString;
 				}
-			} else if (name.equalsIgnoreCase("coordinates")) {
+			} else if (localName.equalsIgnoreCase("coordinates")) {
 				if (isPlacemark) {
 					if (!isRoute) {
-						String[] xyParsed = split(chars, ",");
-						double x = Double.parseDouble(xyParsed[0]);
-						double y = Double.parseDouble(xyParsed[1]);
-						mRoad.mPoints[mRoad.mPoints.length - 1].mLatitude = x;
-						mRoad.mPoints[mRoad.mPoints.length - 1].mLongitude = y;
+						String[] xyParsed = split(mString, ",");
+						double lon = Double.parseDouble(xyParsed[0]);
+						double lat = Double.parseDouble(xyParsed[1]);
+						mRoad.mPoints[mRoad.mPoints.length - 1].mLatitude = lat;
+						mRoad.mPoints[mRoad.mPoints.length - 1].mLongitude = lon;
 					} else {
-						String[] coodrinatesParsed = split(chars, " ");
+						String[] coodrinatesParsed = split(mString, " ");
+						mRoad.mRoute = new double[coodrinatesParsed.length][2];
 						for (int i = 0; i < coodrinatesParsed.length; i++) {
-							double[] xy = new double[] {};
 							String[] xyParsed = split(coodrinatesParsed[i], ",");
-							double x = Double.parseDouble(xyParsed[0]);
-							double y = Double.parseDouble(xyParsed[1]);
-
-							xy = addDouble(xy, x);
-							xy = addDouble(xy, y);
-							mRoad.mRoute = addDouble(mRoad.mRoute, xy);
+							for (int j = 0; j < 2 && j < xyParsed.length; j++)
+								mRoad.mRoute[i][j] = Double
+										.parseDouble(xyParsed[j]);
 						}
 					}
 				}
 			}
+		}
+		mCurrentElement.pop();
+		if (localName.equalsIgnoreCase("Placemark")) {
+			isPlacemark = false;
+			if (isRoute)
+				isRoute = false;
+		} else if (localName.equalsIgnoreCase("ItemIcon")) {
+			if (isItemIcon)
+				isItemIcon = false;
 		}
 	}
 
@@ -141,49 +153,11 @@ class KMLHandler extends DefaultHandler {
 		return value;
 	}
 
-	public void endElement(String uri, String localName, String name)
-			throws SAXException {
-		mCurrentElement.pop();
-		if (name.equalsIgnoreCase("Placemark")) {
-			isPlacemark = false;
-			if (isRoute)
-				isRoute = false;
-		} else if (name.equalsIgnoreCase("ItemIcon")) {
-			if (isItemIcon)
-				isItemIcon = false;
-		}
-	}
-
 	public Point[] addPoint(Point[] points) {
 		Point[] result = new Point[points.length + 1];
 		for (int i = 0; i < points.length; i++)
 			result[i] = points[i];
 		result[points.length] = new Point();
-		return result;
-	}
-
-	static double[] addDouble(double[] array, double element) {
-		int arrayLength = array.length;
-		double[] result = new double[arrayLength + 1];
-		for (int i = 0; i < arrayLength; i++)
-			result[i] = array[i];
-		result[arrayLength] = element;
-		return result;
-	}
-
-	static double[][] addDouble(double[][] array, double[] element) {
-		int arrayLength = array.length;
-		double[][] result = new double[arrayLength + 1][];
-		for (int i = 0; i < arrayLength; i++) {
-			int elementLength = array[i].length;
-			result[i] = new double[elementLength];
-			for (int j = 0; j < elementLength; j++)
-				result[i][j] = array[i][j];
-		}
-		int newElementLength = element.length;
-		result[arrayLength] = new double[newElementLength];
-		for (int j = 0; j < newElementLength; j++)
-			result[arrayLength][j] = element[j];
 		return result;
 	}
 
