@@ -1,6 +1,8 @@
-package ci.org.geo.route.blackberry;
+package org.ci.geo.route.blackberry;
 
 import javax.microedition.location.Coordinates;
+
+import org.ci.geo.route.*;
 
 import net.rim.device.api.lbs.MapField;
 import net.rim.device.api.system.Bitmap;
@@ -15,7 +17,6 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.container.MainScreen;
 import net.rim.device.api.util.Arrays;
 
-import ci.org.geo.route.*;
 
 public class MapPathApp extends UiApplication {
 
