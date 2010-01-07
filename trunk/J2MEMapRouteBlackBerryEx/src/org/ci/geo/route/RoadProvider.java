@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Stack;
 
-import javax.microedition.io.Connector;
-import javax.microedition.io.HttpConnection;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -16,9 +14,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 public class RoadProvider {
 
-	public static Road getRoute(double fromLat, double fromLon, double toLat,
-			double toLon) {
-		InputStream is = getPath(fromLat, fromLon, toLat, toLon);
+	public static Road getRoute(InputStream is) {
 		KMLHandler handler = new KMLHandler();
 		try {
 			SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
@@ -33,9 +29,8 @@ public class RoadProvider {
 		return handler.mRoad;
 	}
 
-	private static InputStream getPath(double fromLat, double fromLon,
+	public static String getUrl(double fromLat, double fromLon,
 			double toLat, double toLon) {// connect to map web service
-		InputStream is = null;
 		StringBuffer urlString = new StringBuffer();
 		urlString.append("http://maps.google.com/maps?f=d&hl=en");
 		urlString.append("&saddr=");// from
@@ -47,18 +42,8 @@ public class RoadProvider {
 		urlString.append(",");
 		urlString.append(Double.toString(toLon));
 		urlString.append("&ie=UTF8&0&om=0&output=kml");
-		HttpConnection urlConnection = null;
-		String url = urlString.toString();
-		try {
-			urlConnection = (HttpConnection) Connector.open(url);
-			urlConnection.setRequestMethod("GET");
-			is = urlConnection.openInputStream();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return is;
+		return urlString.toString();
 	}
-
 }
 
 class KMLHandler extends DefaultHandler {
