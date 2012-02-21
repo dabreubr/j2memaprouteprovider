@@ -2,6 +2,7 @@ package org.ci.geo.route;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Stack;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -115,13 +116,19 @@ class KMLHandler extends DefaultHandler {
 						mRoad.mPoints[mRoad.mPoints.length - 1].mLongitude = lon;
 					} else {
 						String[] coodrinatesParsed = split(mString, " ");
-						mRoad.mRoute = new double[coodrinatesParsed.length][2];
-						for (int i = 0; i < coodrinatesParsed.length; i++) {
+						int lenNew = coodrinatesParsed.length;
+						int lenOld = mRoad.mRoute.length;
+						double[][] temp = new double[lenOld + lenNew][2];
+						for (int i = 0; i < lenOld; i++) {
+							temp[i] = mRoad.mRoute[i];
+						}
+						for (int i = 0; i < lenNew; i++) {
 							String[] xyParsed = split(coodrinatesParsed[i], ",");
 							for (int j = 0; j < 2 && j < xyParsed.length; j++)
-								mRoad.mRoute[i][j] = Double
+								temp[lenOld + i][j] = Double
 										.parseDouble(xyParsed[j]);
 						}
+						mRoad.mRoute = temp;
 					}
 				}
 			}
